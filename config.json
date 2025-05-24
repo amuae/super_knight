@@ -1,0 +1,163 @@
+{
+  "log": {
+    "disabled": true,
+    "level": "info",
+    "output": "sing-box.log",
+    "timestamp": true
+  },
+  "certificate": {
+      "store": "mozilla"
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true,
+      "store_fakeip": true
+    },
+    "clash_api": {
+      "default_mode": "默认",
+      "external_controller": "0.0.0.0:9090",
+      "external_ui": "ui",
+      "external_ui_download_url": "https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip"
+    }
+  },
+  "dns": {
+    "servers": [
+      {
+        "type": "https",
+        "tag": "dr",
+        "server": "223.5.5.5"
+      },
+      {
+        "type": "https",
+        "tag": "ali",
+        "server": "223.5.5.5",
+        "detour": "国内出口"
+      },
+      {
+        "type": "https",
+        "tag": "cf",
+        "server": "1.1.1.1",
+        "detour": "国外出口"
+      }
+    ],
+    "rules": [
+      {
+        "rule_set": "Geosite-CN",
+        "server": "ali"
+      }
+    ],
+    "final": "cf",
+    "strategy": "prefer_ipv4"
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "mixed",
+      "listen": "::",
+      "listen_port": 7890,
+      "set_system_proxy": false
+    },
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "address": [
+        "172.18.0.1/30",
+        "fdfe:dcba:9876::1/126"
+      ],
+      "interface_name": "eth-jkl",
+      "stack": "gvisor",
+      "auto_route": true,
+      "strict_route": true
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "type": "direct"
+    },
+    {
+      "tag": "国外出口",
+      "type": "selector",
+      "providers": [
+        "自建"
+      ],
+      "interrupt_exist_connections": true
+    },
+    {
+      "tag": "国内出口",
+      "type": "selector",
+      "outbounds": [
+        "direct"
+      ],
+      "providers": [
+        "家宽"
+      ],
+      "interrupt_exist_connections": true
+    }
+  ],
+  "route": {
+    "rule_set": [
+      {
+        "type": "remote",
+        "tag": "Geoip-CN",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/sing/geo/geoip/cn.srs",
+      },
+      {
+        "type": "remote",
+        "tag": "Geosite-CN",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/sing/geo/geosite/cn.srs"
+      }
+    ],
+    "default_domain_resolver": {
+      "server": "ali",
+      "rewrite_ttl": 60,
+      "client_subnet": "1.1.1.1"
+    },
+    "rules": [
+      {
+        "action": "sniff"
+      },
+      {
+        "port": 53,
+        "action": "hijack-dns"
+      },
+      { 
+        "package_name": [
+          "com.tencent.lolm",
+          "com.tencent.tmgp.dfm"
+        ],
+        "outbound": "direct"
+      },
+      {
+        "rule_set": [
+          "Geoip-CN",
+          "Geosite-CN"
+        ],
+        "outbound": "direct"
+      },
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      }
+    ],
+    "find_process": true,
+    "auto_detect_interface": true,
+    "final": "国外出口"
+  },
+  "providers": [
+    {
+      "tag": "自建",
+      "type": "remote",
+      "url": "https://sub.suuus.de/sub233331/download/bp-cx?target=sing-box",
+      "update_interval": "24h"
+    },
+    {
+      "tag": "家宽",
+      "type": "remote",
+      "url": "https://sub.suuus.de/sub233331/download/jia?target=sing-box",
+      "update_interval": "1h"
+    }
+  ]
+}
